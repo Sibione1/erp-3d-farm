@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+:root {
+  /* Solarized Dark Theme */
+  --solar-base03: #002b36;
+  --solar-base02: #073642;
+  --solar-base01: #586e75;
+  --solar-base00: #657b83;
+  --solar-base0: #839496;
+  --solar-base1: #93a1a1;
+  --solar-base2: #eee8d5;
+  --solar-base3: #fdf6e3;
+  --solar-yellow: #b58900;
+  --solar-orange: #cb4b16;
+  --solar-red: #dc322f;
+  --solar-magenta: #d33682;
+  --solar-violet: #6c71c4;
+  --solar-blue: #268bd2;
+  --solar-cyan: #2aa198;
+  --solar-green: #859900;
+
+  --background: var(--solar-base03);
+  --foreground: var(--solar-base0);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-solar-base03: var(--solar-base03);
+  --color-solar-base02: var(--solar-base02);
+  --color-solar-base01: var(--solar-base01);
+  --color-solar-base00: var(--solar-base00);
+  --color-solar-base0: var(--solar-base0);
+  --color-solar-base1: var(--solar-base1);
+  --color-solar-base2: var(--solar-base2);
+  --color-solar-base3: var(--solar-base3);
+  --color-solar-yellow: var(--solar-yellow);
+  --color-solar-orange: var(--solar-orange);
+  --color-solar-red: var(--solar-red);
+  --color-solar-magenta: var(--solar-magenta);
+  --color-solar-violet: var(--solar-violet);
+  --color-solar-blue: var(--solar-blue);
+  --color-solar-cyan: var(--solar-cyan);
+  --color-solar-green: var(--solar-green);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@media print {
+  aside, button, nav, form, .no-print, header, .print-hidden, [type="button"], [type="submit"] {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    background: white !important;
+    color: black !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  * {
+    color: black !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    border-color: #ccc !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-top: 20px;
+  }
+  th, td {
+    border: 1px solid #ccc !important;
+    padding: 8px !important;
+    text-align: left !important;
+  }
+  th {
+    background-color: #f3f4f6 !important;
+    font-weight: bold !important;
+  }
+  .print-card-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 15px !important;
+  }
+  .print-card {
+    border: 1px solid #ccc !important;
+    padding: 15px !important;
+    border-radius: 8px !important;
+    page-break-inside: avoid !important;
+  }
+}
