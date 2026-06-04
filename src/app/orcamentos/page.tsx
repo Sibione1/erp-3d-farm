@@ -166,9 +166,9 @@ export default function OrcamentosPage() {
     setEditingQuoteItemId(item.id);
     const p = projects.find(proj => proj.id === item.projectId);
     setItemFormData({
-      projectId: item.projectId,
+      projectId: item.projectId || '',
       filamentsUsage: item.filamentsUsage || (p?.filamentsUsage ? [...p.filamentsUsage] : []),
-      quantity: item.quantity,
+      quantity: item.quantity || 1,
       margin: 100,
     });
     setManualPrice(item.price);

@@ -104,17 +104,17 @@ export default function OrderServicePage() {
               {/* Informações de Filamento para AMS */}
               <div className="mt-4 border-t border-gray-300 pt-4">
                 <h4 className="text-sm font-black uppercase mb-2">Cores / Filamentos Necessários (Carregamento AMS)</h4>
-                {item.filamentIds && item.filamentIds.length > 0 ? (
+                {item.filamentsUsage && item.filamentsUsage.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {item.filamentIds.map(fId => {
-                      const fil = filaments.find(f => f.id === fId);
+                    {item.filamentsUsage.map(usage => {
+                      const fil = filaments.find(f => f.id === usage.filamentId);
                       if (!fil) return null;
                       return (
-                        <div key={fId} className="flex items-center gap-2 border border-gray-300 p-2 rounded w-48">
+                        <div key={usage.filamentId} className="flex items-center gap-2 border border-gray-300 p-2 rounded w-48">
                           <div className="w-6 h-6 border border-gray-400 rounded-full" style={{ backgroundColor: fil.colorHex }}></div>
                           <div className="flex-1">
                             <p className="text-xs font-bold leading-tight">{fil.colorName}</p>
-                            <p className="text-[10px] text-gray-600 leading-tight">{fil.brand} - {fil.material}</p>
+                            <p className="text-[10px] text-gray-600 leading-tight">{fil.brand} - {fil.material} ({usage.grams}g)</p>
                           </div>
                         </div>
                       );
