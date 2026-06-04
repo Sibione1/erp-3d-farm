@@ -398,7 +398,7 @@ export default function ProjetosPage() {
                   <div className="mt-6 pt-4 border-t border-[var(--solar-base01)] flex gap-2 no-print">
                      <button 
                       onClick={() => handleEdit(project)}
-                      className="flex-1 bg-[var(--solar-blue)] bg-opacity-20 text-[var(--solar-blue)] text-xs py-2 rounded hover:bg-opacity-40 transition-colors font-bold"
+                      className="flex-1 bg-solar-blue/15 text-solar-blue text-xs py-2 rounded hover:bg-solar-blue/30 transition-colors font-bold"
                      >
                        Editar
                      </button>
@@ -409,7 +409,7 @@ export default function ProjetosPage() {
                           loadData();
                         }
                       }}
-                      className="flex-1 bg-red-100 text-red-600 text-xs py-2 rounded hover:bg-red-200 transition-colors font-bold"
+                      className="flex-1 bg-solar-red/15 text-solar-red text-xs py-2 rounded hover:bg-solar-red/30 transition-colors font-bold"
                      >
                        Excluir
                      </button>
@@ -465,23 +465,12 @@ export default function ProjetosPage() {
                       </div>
                     </td>
                     <td className="p-3 text-center no-print">
-                      <div className="flex items-center justify-center gap-2">
-                        <button 
-                          onClick={() => handleEdit(project)} 
-                          className="bg-[var(--solar-blue)] bg-opacity-20 text-[var(--solar-blue)] px-2.5 py-1.5 rounded hover:bg-opacity-40 transition-colors"
-                        >
-                          ✏️
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button onClick={() => handleEdit(project)} className="bg-solar-blue/15 text-solar-blue px-2.5 py-1.5 rounded hover:bg-solar-blue/30 transition-colors text-xs font-bold">
+                          Editar
                         </button>
-                        <button 
-                          onClick={() => {
-                            if(confirm('Excluir este projeto?')) {
-                              deleteProject(project.id);
-                              loadData();
-                            }
-                          }}
-                          className="bg-[var(--solar-red)] bg-opacity-20 text-[var(--solar-red)] px-2.5 py-1.5 rounded hover:bg-opacity-40 transition-colors"
-                        >
-                          🗑️
+                        <button onClick={() => { if(confirm('Excluir este projeto?')) { deleteProject(project.id); loadData(); } }} className="bg-solar-red/15 text-solar-red px-2.5 py-1.5 rounded hover:bg-solar-red/30 transition-colors text-xs font-bold">
+                          Excluir
                         </button>
                       </div>
                     </td>

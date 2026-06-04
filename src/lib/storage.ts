@@ -28,21 +28,80 @@ const mapFromDb = (obj: any) => {
   return newObj;
 };
 
-const mapToDb = (obj: any) => {
+// Mapeador seguro para DB: Envia apenas colunas existentes no Supabase dependendo da tabela
+const mapToDb = (table: string, obj: any) => {
   if (!obj) return obj;
   const newObj: any = {};
-  for (const key in obj) {
-    // Evitar problemas com arrays ou objetos complexos serializando-os para JSON string nas tabelas simples do Supabase
-    if (key === 'filamentsUsage' && typeof obj[key] === 'object') {
-      newObj['filaments_usage'] = JSON.stringify(obj[key]);
-      continue;
+  
+  const mapIfPresent = (localKey: string, dbKey: string, transform?: (val: any) => any) => {
+    if (localKey in obj) {
+      newObj[dbKey] = transform ? transform(obj[localKey]) : obj[localKey];
     }
-    if (key === 'items' && typeof obj[key] === 'object') {
-      newObj['items'] = JSON.stringify(obj[key]);
-      continue;
+  };
+
+  if (table === 'filaments') {
+    mapIfPresent('id', 'id');
+    mapIfPresent('brand', 'brand');
+    mapIfPresent('material', 'material');
+    mapIfPresent('colorName', 'color_name');
+    mapIfPresent('colorHex', 'color_hex');
+    mapIfPresent('initialWeightG', 'initial_weight_g');
+    mapIfPresent('currentWeightG', 'current_weight_g');
+    mapIfPresent('purchaseCost', 'purchase_cost');
+    mapIfPresent('createdAt', 'created_at');
+  } else if (table === 'clients') {
+    mapIfPresent('id', 'id');
+    mapIfPresent('fullName', 'full_name');
+    mapIfPresent('companyName', 'company_name');
+    mapIfPresent('phone', 'phone');
+    mapIfPresent('email', 'email');
+    mapIfPresent('billingAddress', 'billing_address');
+    mapIfPresent('createdAt', 'created_at');
+  } else if (table === 'projects') {
+    mapIfPresent('id', 'id');
+    mapIfPresent('name', 'name');
+    mapIfPresent('description', 'description');
+    if ('imageUrls' in obj) {
+      newObj.image_url = obj.imageUrls && obj.imageUrls.length > 0 ? obj.imageUrls[0] : null;
     }
-    const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-    newObj[snakeKey] = obj[key];
+    mapIfPresent('estimatedPrintTimeMinutes', 'estimated_print_time_minutes');
+    mapIfPresent('estimatedConsumptionG', 'estimated_consumption_g');
+    mapIfPresent('successRate', 'success_rate');
+    mapIfPresent('createdAt', 'created_at');
+  } else if (table === 'orders') {
+    mapIfPresent('id', 'id');
+    mapIfPresent('clientId', 'client_id');
+    if ('items' in obj) {
+      const firstItem = obj.items && obj.items.length > 0 ? obj.items[0] : null;
+      newObj.project_id = firstItem?.projectId || null;
+      newObj.filament_id = firstItem?.filamentsUsage && firstItem.filamentsUsage.length > 0 ? firstItem.filamentsUsage[0].filamentId : null;
+      newObj.printer_id = firstItem?.machineId || null;
+      newObj.items = JSON.stringify(obj.items);
+    }
+    mapIfPresent('status', 'status');
+    mapIfPresent('calculatedCost', 'calculated_cost');
+    mapIfPresent('finalPrice', 'final_price');
+    mapIfPresent('createdAt', 'created_at');
+  } else if (table === 'printers') {
+    mapIfPresent('id', 'id');
+    mapIfPresent('name', 'name');
+    mapIfPresent('model', 'model');
+    mapIfPresent('depreciationCostPerHour', 'depreciation_cost_per_hour');
+    mapIfPresent('energyConsumptionKwPerHour', 'energy_consumption_kw_per_hour');
+    mapIfPresent('createdAt', 'created_at');
+  } else if (table === 'transactions') {
+    mapIfPresent('id', 'id');
+    mapIfPresent('date', 'date');
+    mapIfPresent('amount', 'amount');
+    mapIfPresent('type', 'type');
+    mapIfPresent('category', 'category');
+    mapIfPresent('description', 'description');
+    mapIfPresent('createdAt', 'created_at');
+  } else {
+    for (const key in obj) {
+      const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+      newObj[snakeKey] = obj[key];
+    }
   }
   return newObj;
 };
@@ -137,7 +196,7 @@ export const addFilament = (filament: Omit<Filament, 'id' | 'createdAt'>) => {
     createdAt: new Date().toISOString(),
   };
   setStorageData('filaments', [...filaments, newFilament]);
-  syncInsert('filaments', mapToDb(newFilament));
+  syncInsert('filaments', mapToDb('filaments', newFilament));
   return newFilament;
 };
 
@@ -147,7 +206,7 @@ export const updateFilament = (id: string, data: Partial<Filament>) => {
   if (index !== -1) {
     filaments[index] = { ...filaments[index], ...data };
     setStorageData('filaments', filaments);
-    syncUpdate('filaments', id, mapToDb(data));
+    syncUpdate('filaments', id, mapToDb('filaments', data));
   }
 };
 
@@ -165,7 +224,7 @@ export const addClient = (client: Omit<Client, 'id' | 'createdAt'>) => {
     createdAt: new Date().toISOString(),
   };
   setStorageData('clients', [...clients, newClient]);
-  syncInsert('clients', mapToDb(newClient));
+  syncInsert('clients', mapToDb('clients', newClient));
   return newClient;
 };
 
@@ -175,7 +234,7 @@ export const updateClient = (id: string, data: Partial<Client>) => {
   if (index !== -1) {
     clients[index] = { ...clients[index], ...data };
     setStorageData('clients', clients);
-    syncUpdate('clients', id, mapToDb(data));
+    syncUpdate('clients', id, mapToDb('clients', data));
   }
 };
 
@@ -193,7 +252,7 @@ export const addProject = (project: Omit<Project, 'id' | 'createdAt'>) => {
     createdAt: new Date().toISOString(),
   };
   setStorageData('projects', [...projects, newProject]);
-  syncInsert('projects', mapToDb(newProject));
+  syncInsert('projects', mapToDb('projects', newProject));
   return newProject;
 };
 
@@ -203,7 +262,7 @@ export const updateProject = (id: string, data: Partial<Project>) => {
   if (index !== -1) {
     projects[index] = { ...projects[index], ...data };
     setStorageData('projects', projects);
-    syncUpdate('projects', id, mapToDb(data));
+    syncUpdate('projects', id, mapToDb('projects', data));
   }
 };
 
@@ -221,7 +280,7 @@ export const addOrder = (order: Omit<Order, 'id' | 'createdAt'>) => {
     createdAt: new Date().toISOString(),
   };
   setStorageData('orders', [...orders, newOrder]);
-  syncInsert('orders', mapToDb(newOrder));
+  syncInsert('orders', mapToDb('orders', newOrder));
   return newOrder;
 };
 
@@ -231,7 +290,7 @@ export const updateOrder = (id: string, data: Partial<Order>) => {
   if (index !== -1) {
     orders[index] = { ...orders[index], ...data };
     setStorageData('orders', orders);
-    syncUpdate('orders', id, mapToDb(data));
+    syncUpdate('orders', id, mapToDb('orders', data));
   }
 };
 
@@ -249,7 +308,7 @@ export const addTransaction = (transaction: Omit<Transaction, 'id' | 'createdAt'
     createdAt: new Date().toISOString(),
   };
   setStorageData('transactions', [...transactions, newTransaction]);
-  syncInsert('transactions', mapToDb(newTransaction));
+  syncInsert('transactions', mapToDb('transactions', newTransaction));
   return newTransaction;
 };
 
@@ -259,7 +318,7 @@ export const updateTransaction = (id: string, data: Partial<Transaction>) => {
   if (index !== -1) {
     transactions[index] = { ...transactions[index], ...data };
     setStorageData('transactions', transactions);
-    syncUpdate('transactions', id, mapToDb(data));
+    syncUpdate('transactions', id, mapToDb('transactions', data));
   }
 };
 
@@ -277,7 +336,7 @@ export const addPrinter = (printer: Omit<Printer, 'id' | 'createdAt'>) => {
     createdAt: new Date().toISOString(),
   };
   setStorageData('printers', [...printers, newPrinter]);
-  syncInsert('printers', mapToDb(newPrinter));
+  syncInsert('printers', mapToDb('printers', newPrinter));
   return newPrinter;
 };
 
@@ -287,7 +346,7 @@ export const updatePrinter = (id: string, data: Partial<Printer>) => {
   if (index !== -1) {
     printers[index] = { ...printers[index], ...data };
     setStorageData('printers', printers);
-    syncUpdate('printers', id, mapToDb(data));
+    syncUpdate('printers', id, mapToDb('printers', data));
   }
 };
 
