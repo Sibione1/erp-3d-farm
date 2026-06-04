@@ -17,15 +17,9 @@ export const setStorageData = (key: string, data: any[]) => {
   window.dispatchEvent(new Event('storage-updated'));
 };
 
-// --- SYNC ENGINE ---
-export const syncFromSupabase = async () => {
-  if (!isBrowser) return;
-  // Integração Supabase Desabilitada conforme solicitado pelo usuário para evitar sobrescrita do LocalStorage.
-  return;
-};
-
 // Helper para converter snake_case do DB para camelCase do App
 const mapFromDb = (obj: any) => {
+  if (!obj) return obj;
   const newObj: any = {};
   for (const key in obj) {
     const camelKey = key.replace(/_([a-z])/g, g => g[1].toUpperCase());
@@ -35,8 +29,18 @@ const mapFromDb = (obj: any) => {
 };
 
 const mapToDb = (obj: any) => {
+  if (!obj) return obj;
   const newObj: any = {};
   for (const key in obj) {
+    // Evitar problemas com arrays ou objetos complexos serializando-os para JSON string nas tabelas simples do Supabase
+    if (key === 'filamentsUsage' && typeof obj[key] === 'object') {
+      newObj['filaments_usage'] = JSON.stringify(obj[key]);
+      continue;
+    }
+    if (key === 'items' && typeof obj[key] === 'object') {
+      newObj['items'] = JSON.stringify(obj[key]);
+      continue;
+    }
     const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
     newObj[snakeKey] = obj[key];
   }
@@ -51,7 +55,80 @@ const generateId = () => {
   return Date.now().toString(36) + Math.random().toString(36).substring(2);
 };
 
-// Helpers for specific entities
+// --- SYNC HELPERS (Type-safe and failsafe async calls) ---
+const syncInsert = async (table: string, record: any) => {
+  try {
+    const { error } = await supabase.from(table).insert([record]);
+    if (error) console.error(`Erro ao inserir em ${table}:`, error.message);
+  } catch (e) {
+    console.error(`Erro ao inserir em ${table}:`, e);
+  }
+};
+
+const syncUpdate = async (table: string, id: string, record: any) => {
+  try {
+    const { error } = await supabase.from(table).update(record).eq('id', id);
+    if (error) console.error(`Erro ao atualizar ${table}:`, error.message);
+  } catch (e) {
+    console.error(`Erro ao atualizar ${table}:`, e);
+  }
+};
+
+const syncDelete = async (table: string, id: string) => {
+  try {
+    const { error } = await supabase.from(table).delete().eq('id', id);
+    if (error) console.error(`Erro ao deletar de ${table}:`, error.message);
+  } catch (e) {
+    console.error(`Erro ao deletar de ${table}:`, e);
+  }
+};
+
+// --- SYNC ENGINE ---
+export const syncFromSupabase = async () => {
+  if (!isBrowser) return;
+  try {
+    const { data: filaments } = await supabase.from('filaments').select('*');
+    if (filaments && filaments.length > 0) {
+      setStorageData('filaments', filaments.map(mapFromDb));
+    }
+
+    const { data: clients } = await supabase.from('clients').select('*');
+    if (clients && clients.length > 0) {
+      setStorageData('clients', clients.map(mapFromDb));
+    }
+
+    const { data: projects } = await supabase.from('projects').select('*');
+    if (projects && projects.length > 0) {
+      setStorageData('projects', projects.map(mapFromDb));
+    }
+
+    const { data: printers } = await supabase.from('printers').select('*');
+    if (printers && printers.length > 0) {
+      setStorageData('printers', printers.map(mapFromDb));
+    }
+
+    const { data: orders } = await supabase.from('orders').select('*');
+    if (orders && orders.length > 0) {
+      const mappedOrders = orders.map(mapFromDb).map((o: any) => {
+        if (typeof o.items === 'string') {
+          try { o.items = JSON.parse(o.items); } catch(e) {}
+        }
+        return o;
+      });
+      setStorageData('orders', mappedOrders);
+    }
+    
+    const { data: transactions } = await supabase.from('transactions').select('*');
+    if (transactions && transactions.length > 0) {
+      setStorageData('transactions', transactions.map(mapFromDb));
+    }
+  } catch (e) {
+    console.error('Erro de sincronização com Supabase:', e);
+  }
+};
+
+// --- CRUD Operations ---
+
 export const addFilament = (filament: Omit<Filament, 'id' | 'createdAt'>) => {
   const filaments = getStorageData<Filament>('filaments');
   const newFilament: Filament = {
@@ -60,7 +137,7 @@ export const addFilament = (filament: Omit<Filament, 'id' | 'createdAt'>) => {
     createdAt: new Date().toISOString(),
   };
   setStorageData('filaments', [...filaments, newFilament]);
-  // supabase.from('filaments').insert([mapToDb(newFilament)]).then().catch(() => {});
+  syncInsert('filaments', mapToDb(newFilament));
   return newFilament;
 };
 
@@ -70,14 +147,14 @@ export const updateFilament = (id: string, data: Partial<Filament>) => {
   if (index !== -1) {
     filaments[index] = { ...filaments[index], ...data };
     setStorageData('filaments', filaments);
-    // supabase.from('filaments').update(mapToDb(data)).eq('id', id).then().catch(() => {});
+    syncUpdate('filaments', id, mapToDb(data));
   }
 };
 
 export const deleteFilament = (id: string) => {
   const filaments = getStorageData<Filament>('filaments');
   setStorageData('filaments', filaments.filter(f => f.id !== id));
-  // supabase.from('filaments').delete().eq('id', id).then().catch(() => {});
+  syncDelete('filaments', id);
 };
 
 export const addClient = (client: Omit<Client, 'id' | 'createdAt'>) => {
@@ -88,7 +165,7 @@ export const addClient = (client: Omit<Client, 'id' | 'createdAt'>) => {
     createdAt: new Date().toISOString(),
   };
   setStorageData('clients', [...clients, newClient]);
-  // supabase.from('clients').insert([mapToDb(newClient)]).then().catch(() => {});
+  syncInsert('clients', mapToDb(newClient));
   return newClient;
 };
 
@@ -98,14 +175,14 @@ export const updateClient = (id: string, data: Partial<Client>) => {
   if (index !== -1) {
     clients[index] = { ...clients[index], ...data };
     setStorageData('clients', clients);
-    // supabase.from('clients').update(mapToDb(data)).eq('id', id).then().catch(() => {});
+    syncUpdate('clients', id, mapToDb(data));
   }
 };
 
 export const deleteClient = (id: string) => {
   const clients = getStorageData<Client>('clients');
   setStorageData('clients', clients.filter(c => c.id !== id));
-  // supabase.from('clients').delete().eq('id', id).then().catch(() => {});
+  syncDelete('clients', id);
 };
 
 export const addProject = (project: Omit<Project, 'id' | 'createdAt'>) => {
@@ -116,7 +193,7 @@ export const addProject = (project: Omit<Project, 'id' | 'createdAt'>) => {
     createdAt: new Date().toISOString(),
   };
   setStorageData('projects', [...projects, newProject]);
-  // supabase.from('projects').insert([mapToDb(newProject)]).then().catch(() => {});
+  syncInsert('projects', mapToDb(newProject));
   return newProject;
 };
 
@@ -126,14 +203,14 @@ export const updateProject = (id: string, data: Partial<Project>) => {
   if (index !== -1) {
     projects[index] = { ...projects[index], ...data };
     setStorageData('projects', projects);
-    // supabase.from('projects').update(mapToDb(data)).eq('id', id).then().catch(() => {});
+    syncUpdate('projects', id, mapToDb(data));
   }
 };
 
 export const deleteProject = (id: string) => {
   const projects = getStorageData<Project>('projects');
   setStorageData('projects', projects.filter(p => p.id !== id));
-  // supabase.from('projects').delete().eq('id', id).then().catch(() => {});
+  syncDelete('projects', id);
 };
 
 export const addOrder = (order: Omit<Order, 'id' | 'createdAt'>) => {
@@ -144,7 +221,7 @@ export const addOrder = (order: Omit<Order, 'id' | 'createdAt'>) => {
     createdAt: new Date().toISOString(),
   };
   setStorageData('orders', [...orders, newOrder]);
-  // supabase.from('orders').insert([mapToDb(newOrder)]).then().catch(() => {});
+  syncInsert('orders', mapToDb(newOrder));
   return newOrder;
 };
 
@@ -154,14 +231,14 @@ export const updateOrder = (id: string, data: Partial<Order>) => {
   if (index !== -1) {
     orders[index] = { ...orders[index], ...data };
     setStorageData('orders', orders);
-    // supabase.from('orders').update(mapToDb(data)).eq('id', id).then().catch(() => {});
+    syncUpdate('orders', id, mapToDb(data));
   }
 };
 
 export const deleteOrder = (id: string) => {
   const orders = getStorageData<Order>('orders');
   setStorageData('orders', orders.filter(o => o.id !== id));
-  // supabase.from('orders').delete().eq('id', id).then().catch(() => {});
+  syncDelete('orders', id);
 };
 
 export const addTransaction = (transaction: Omit<Transaction, 'id' | 'createdAt'>) => {
@@ -172,7 +249,7 @@ export const addTransaction = (transaction: Omit<Transaction, 'id' | 'createdAt'
     createdAt: new Date().toISOString(),
   };
   setStorageData('transactions', [...transactions, newTransaction]);
-  // supabase.from('transactions').insert([mapToDb(newTransaction)]).then().catch(() => {});
+  syncInsert('transactions', mapToDb(newTransaction));
   return newTransaction;
 };
 
@@ -182,14 +259,14 @@ export const updateTransaction = (id: string, data: Partial<Transaction>) => {
   if (index !== -1) {
     transactions[index] = { ...transactions[index], ...data };
     setStorageData('transactions', transactions);
-    // supabase.from('transactions').update(mapToDb(data)).eq('id', id).then().catch(() => {});
+    syncUpdate('transactions', id, mapToDb(data));
   }
 };
 
 export const deleteTransaction = (id: string) => {
   const transactions = getStorageData<Transaction>('transactions');
   setStorageData('transactions', transactions.filter(t => t.id !== id));
-  // supabase.from('transactions').delete().eq('id', id).then().catch(() => {});
+  syncDelete('transactions', id);
 };
 
 export const addPrinter = (printer: Omit<Printer, 'id' | 'createdAt'>) => {
@@ -200,7 +277,7 @@ export const addPrinter = (printer: Omit<Printer, 'id' | 'createdAt'>) => {
     createdAt: new Date().toISOString(),
   };
   setStorageData('printers', [...printers, newPrinter]);
-  // supabase.from('printers').insert([mapToDb(newPrinter)]).then().catch(() => {});
+  syncInsert('printers', mapToDb(newPrinter));
   return newPrinter;
 };
 
@@ -210,21 +287,20 @@ export const updatePrinter = (id: string, data: Partial<Printer>) => {
   if (index !== -1) {
     printers[index] = { ...printers[index], ...data };
     setStorageData('printers', printers);
-    // supabase.from('printers').update(mapToDb(data)).eq('id', id).then().catch(() => {});
+    syncUpdate('printers', id, mapToDb(data));
   }
 };
 
 export const deletePrinter = (id: string) => {
   const printers = getStorageData<Printer>('printers');
   setStorageData('printers', printers.filter(p => p.id !== id));
-  // supabase.from('printers').delete().eq('id', id).then().catch(() => {});
+  syncDelete('printers', id);
 };
 
 export const getSystemSettings = (): SystemSettings => {
   if (!isBrowser) return {};
   const data = localStorage.getItem('system_settings');
   if (!data) {
-    // Default system settings
     return {
       quoteHourBasePrice: 18.0,
       quoteValidityDays: 15,
@@ -244,4 +320,3 @@ export const updateSystemSettings = (data: Partial<SystemSettings>) => {
   localStorage.setItem('system_settings', JSON.stringify(updated));
   window.dispatchEvent(new Event('storage-updated'));
 };
-
