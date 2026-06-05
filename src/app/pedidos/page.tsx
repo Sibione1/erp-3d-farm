@@ -132,6 +132,11 @@ export default function PedidosPage() {
     loadData();
   };
 
+  const handleEditOrder = (orderId: string) => {
+    sessionStorage.setItem('edit_order_id', orderId);
+    window.location.href = '/orcamentos';
+  };
+
   // Filter orders
   const filteredOrders = activeOrders.filter(order => {
     const client = clients.find(c => c.id === order.clientId);
@@ -253,10 +258,13 @@ export default function PedidosPage() {
                       <span className="text-[var(--solar-base2)] text-base font-bold">{client?.fullName || 'Desconhecido'}</span>
                     </div>
                     <div className="flex gap-2 no-print">
+                      <button onClick={() => handleEditOrder(order.id)} className="bg-solar-blue/15 text-solar-blue px-3 py-1 text-xs rounded font-bold hover:bg-solar-blue/30 transition-colors">
+                        ✏️ Alterar
+                      </button>
                       <a href={`/pedidos/${order.id}/os`} target="_blank" className="bg-[var(--solar-cyan)] text-[var(--solar-base03)] px-3 py-1 text-xs rounded font-bold hover:opacity-90">
                         🖨️ Imprimir OS
                       </a>
-                      <button onClick={() => { if(confirm('Excluir este pedido?')) deleteOrder(order.id); loadData(); }} className="text-xs bg-[var(--solar-red)] bg-opacity-20 text-[var(--solar-red)] px-2 py-1 rounded hover:bg-opacity-40">
+                      <button onClick={() => { if(confirm('Excluir este pedido?')) deleteOrder(order.id); loadData(); }} className="text-xs bg-solar-red/15 text-solar-red px-2 py-1 rounded hover:bg-solar-red/30 transition-colors">
                         🗑️
                       </button>
                     </div>
@@ -427,10 +435,13 @@ export default function PedidosPage() {
                     <td className="p-3 text-right font-bold text-[var(--solar-yellow)] font-mono">R$ {order.finalPrice.toFixed(2)}</td>
                     <td className="p-3 text-center no-print">
                       <div className="flex items-center justify-center gap-2">
+                        <button onClick={() => handleEditOrder(order.id)} className="bg-solar-blue/15 text-solar-blue px-2 py-1 rounded text-xs font-bold hover:bg-solar-blue/30 transition-colors">
+                          Alterar
+                        </button>
                         <a href={`/pedidos/${order.id}/os`} target="_blank" className="bg-[var(--solar-cyan)] text-[var(--solar-base03)] px-2 py-1 rounded text-xs font-bold hover:opacity-90">
                           OS
                         </a>
-                        <button onClick={() => { if(confirm('Excluir este pedido?')) deleteOrder(order.id); loadData(); }} className="bg-[var(--solar-red)] bg-opacity-20 text-[var(--solar-red)] px-2 py-1 rounded hover:bg-opacity-40 transition-colors">
+                        <button onClick={() => { if(confirm('Excluir este pedido?')) deleteOrder(order.id); loadData(); }} className="bg-solar-red/15 text-solar-red px-2 py-1 rounded hover:bg-solar-red/30 transition-colors">
                           🗑️
                         </button>
                       </div>

@@ -57,6 +57,25 @@ export default function OrcamentosPage() {
 
   useEffect(() => {
     loadData();
+    
+    // Check if redirecting from Pedidos to edit an order
+    const editId = sessionStorage.getItem('edit_order_id');
+    if (editId) {
+      sessionStorage.removeItem('edit_order_id');
+      const allOrders = getStorageData<Order>('orders');
+      const orderToEdit = allOrders.find(o => o.id === editId);
+      if (orderToEdit) {
+        setEditingOrderId(orderToEdit.id);
+        setClientId(orderToEdit.clientId);
+        setShippingCost(orderToEdit.shippingCost);
+        setQuoteItems(orderToEdit.items);
+        setCustomTotalPrice(orderToEdit.finalPrice);
+        setCepDestino('');
+        setIsAdding(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
     const handleStorage = () => loadData();
     window.addEventListener('storage-updated', handleStorage);
     return () => window.removeEventListener('storage-updated', handleStorage);
@@ -207,7 +226,13 @@ export default function OrcamentosPage() {
 
     const filamentCostTotal = totalCalculatedCost - machineCostTotal;
 
+    let isQuoteEdited = true;
     if (editingOrderId) {
+      const order = orders.find(o => o.id === editingOrderId);
+      if (order && !order.isQuote) {
+        isQuoteEdited = false;
+      }
+      
       updateOrder(editingOrderId, {
         clientId: clientId,
         items: quoteItems,
@@ -244,6 +269,10 @@ export default function OrcamentosPage() {
     setCustomTotalPrice(null);
     setEditingQuoteItemId(null);
     loadData();
+
+    if (!isQuoteEdited) {
+      window.location.href = '/pedidos';
+    }
   };
 
   const handleEditQuote = (order: Order) => {
@@ -573,7 +602,7 @@ export default function OrcamentosPage() {
                 )}
               </div>
 
-              <button type="button" onClick={handleAddItem} disabled={itemFormData.filamentsUsage.length === 0 || !itemFormData.projectId} className="w-full mt-4 bg-[var(--solar-blue)] text-[var(--solar-base03)] px-6 py-3 rounded font-bold hover:opacity-90 disabled:opacity-50">
+              <button type="button" onClick={handleAddItem} disabled={!itemFormData.projectId} className="w-full mt-4 bg-[var(--solar-blue)] text-[var(--solar-base03)] px-6 py-3 rounded font-bold hover:opacity-90 disabled:opacity-50">
                 {editingQuoteItemId ? '✓ Salvar Alterações do Item' : '+ Adicionar Item à Tabela'}
               </button>
             </div>
