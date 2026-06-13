@@ -33,8 +33,8 @@ export default function SlicerImageUpload({ onDataExtracted, availableFilaments 
       reader.onload = async () => {
         const originalBase64 = reader.result as string;
         
-        // Compress image to prevent localStorage QuotaExceededError
-        const compressImage = (base64Str: string): Promise<string> => {
+        // Compress image to prevent localStorage QuotaExceededError while keeping AI accurate
+        const compressImage = (base64Str: string, maxWidth: number, quality: number): Promise<string> => {
           return new Promise((resolve) => {
             const img = new Image();
             img.src = base64Str;
@@ -42,7 +42,6 @@ export default function SlicerImageUpload({ onDataExtracted, availableFilaments 
               const canvas = document.createElement('canvas');
               let width = img.width;
               let height = img.height;
-              const maxWidth = 1000;
 
               if (width > maxWidth) {
                 height = Math.round((height * maxWidth) / width);
@@ -54,7 +53,7 @@ export default function SlicerImageUpload({ onDataExtracted, availableFilaments 
               const ctx = canvas.getContext('2d');
               if (ctx) {
                 ctx.drawImage(img, 0, 0, width, height);
-                resolve(canvas.toDataURL('image/jpeg', 0.6));
+                resolve(canvas.toDataURL('image/jpeg', quality));
               } else {
                 resolve(base64Str);
               }
@@ -63,7 +62,10 @@ export default function SlicerImageUpload({ onDataExtracted, availableFilaments 
           });
         };
 
-        const base64String = await compressImage(originalBase64);
+        // High quality for Gemini OCR (to read small tables)
+        const base64ForAPI = await compressImage(originalBase64, 2500, 0.9);
+        // Low quality for LocalStorage (to prevent QuotaExceededError)
+        const base64ForStorage = await compressImage(originalBase64, 800, 0.5);
 
         try {
           const response = await fetch('/api/analyze-slicer', {
@@ -72,7 +74,7 @@ export default function SlicerImageUpload({ onDataExtracted, availableFilaments 
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ 
-              image: base64String,
+              image: base64ForAPI,
               availableFilaments
             })
           });
@@ -90,7 +92,7 @@ export default function SlicerImageUpload({ onDataExtracted, availableFilaments 
             totalGrams: data.totalGrams || 0,
             filaments: data.filaments || [],
             rawText: data.rawText || ''
-          }, base64String);
+          }, base64ForStorage);
 
           setSuccessMsg('Dados extraídos com sucesso!');
           setTimeout(() => setSuccessMsg(null), 3000); // clear after 3s
