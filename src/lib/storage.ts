@@ -48,6 +48,10 @@ const mapToDb = (table: string, obj: any) => {
     mapIfPresent('initialWeightG', 'initial_weight_g');
     mapIfPresent('currentWeightG', 'current_weight_g');
     mapIfPresent('purchaseCost', 'purchase_cost');
+    mapIfPresent('tempPrintStart', 'temp_print_start');
+    mapIfPresent('tempPrintEnd', 'temp_print_end');
+    mapIfPresent('tempBedStart', 'temp_bed_start');
+    mapIfPresent('tempBedEnd', 'temp_bed_end');
     mapIfPresent('createdAt', 'created_at');
   } else if (table === 'clients') {
     mapIfPresent('id', 'id');
@@ -56,6 +60,16 @@ const mapToDb = (table: string, obj: any) => {
     mapIfPresent('phone', 'phone');
     mapIfPresent('email', 'email');
     mapIfPresent('billingAddress', 'billing_address');
+    mapIfPresent('cpfCnpj', 'cpf_cnpj');
+    mapIfPresent('rgIe', 'rg_ie');
+    mapIfPresent('postalCode', 'postal_code');
+    mapIfPresent('street', 'street');
+    mapIfPresent('number', 'address_number');
+    mapIfPresent('complement', 'complement');
+    mapIfPresent('neighborhood', 'neighborhood');
+    mapIfPresent('city', 'city');
+    mapIfPresent('state', 'state');
+    mapIfPresent('notes', 'notes');
     mapIfPresent('createdAt', 'created_at');
   } else if (table === 'projects') {
     mapIfPresent('id', 'id');
@@ -67,10 +81,22 @@ const mapToDb = (table: string, obj: any) => {
     mapIfPresent('estimatedPrintTimeMinutes', 'estimated_print_time_minutes');
     mapIfPresent('estimatedConsumptionG', 'estimated_consumption_g');
     mapIfPresent('successRate', 'success_rate');
+    if ('filamentsUsage' in obj) {
+      newObj.filaments_usage = JSON.stringify(obj.filamentsUsage);
+    }
     mapIfPresent('createdAt', 'created_at');
   } else if (table === 'orders') {
     mapIfPresent('id', 'id');
     mapIfPresent('clientId', 'client_id');
+    mapIfPresent('orderNumber', 'order_number');
+    mapIfPresent('isQuote', 'is_quote');
+    mapIfPresent('paymentStatus', 'payment_status');
+    mapIfPresent('paymentMethod', 'payment_method');
+    mapIfPresent('machineCost', 'machine_cost');
+    mapIfPresent('filamentCost', 'filament_cost');
+    mapIfPresent('shippingCost', 'shipping_cost');
+    mapIfPresent('marginPercentage', 'margin_percentage');
+    mapIfPresent('estimatedDeliveryDate', 'estimated_delivery_date');
     if ('items' in obj) {
       const firstItem = obj.items && obj.items.length > 0 ? obj.items[0] : null;
       newObj.project_id = firstItem?.projectId || null;
