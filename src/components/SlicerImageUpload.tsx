@@ -30,8 +30,40 @@ export default function SlicerImageUpload({ onDataExtracted }: SlicerImageUpload
       reader.readAsDataURL(file);
       
       reader.onload = async () => {
-        const base64String = reader.result as string;
+        const originalBase64 = reader.result as string;
         
+        // Compress image to prevent localStorage QuotaExceededError
+        const compressImage = (base64Str: string): Promise<string> => {
+          return new Promise((resolve) => {
+            const img = new Image();
+            img.src = base64Str;
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              let width = img.width;
+              let height = img.height;
+              const maxWidth = 1000;
+
+              if (width > maxWidth) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+              }
+
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', 0.6));
+              } else {
+                resolve(base64Str);
+              }
+            };
+            img.onerror = () => resolve(base64Str);
+          });
+        };
+
+        const base64String = await compressImage(originalBase64);
+
         try {
           const response = await fetch('/api/analyze-slicer', {
             method: 'POST',

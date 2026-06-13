@@ -25,6 +25,22 @@ const mapFromDb = (obj: any) => {
     const camelKey = key.replace(/_([a-z])/g, g => g[1].toUpperCase());
     newObj[camelKey] = obj[key];
   }
+
+  // Restore the imageUrls array expected by the UI for projects
+  if (newObj.imageUrl) {
+    try {
+      newObj.imageUrls = JSON.parse(newObj.imageUrl);
+      if (!Array.isArray(newObj.imageUrls)) {
+        newObj.imageUrls = [newObj.imageUrl];
+      }
+    } catch {
+      newObj.imageUrls = [newObj.imageUrl];
+    }
+    delete newObj.imageUrl;
+  } else if (!newObj.imageUrls) {
+    newObj.imageUrls = [];
+  }
+
   return newObj;
 };
 
@@ -76,7 +92,7 @@ const mapToDb = (table: string, obj: any) => {
     mapIfPresent('name', 'name');
     mapIfPresent('description', 'description');
     if ('imageUrls' in obj) {
-      newObj.image_url = obj.imageUrls && obj.imageUrls.length > 0 ? obj.imageUrls[0] : null;
+      newObj.image_url = obj.imageUrls && obj.imageUrls.length > 0 ? JSON.stringify(obj.imageUrls) : null;
     }
     mapIfPresent('estimatedPrintTimeMinutes', 'estimated_print_time_minutes');
     mapIfPresent('estimatedConsumptionG', 'estimated_consumption_g');
