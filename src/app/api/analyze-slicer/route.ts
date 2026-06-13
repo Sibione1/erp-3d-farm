@@ -44,9 +44,9 @@ Retorne estritamente um objeto JSON válido seguindo a estrutura abaixo:
   ]
 }
 Atenção na lista de 'filaments':
-1. Procure a seção "Filamentos do Projeto" (geralmente à esquerda) para encontrar o NOME e a COR do filamento.
-2. Procure a tabela de Resultado do fatiamento para encontrar a QUANTIDADE EM GRAMAS exata de cada filamento usado.
-Se houver apenas um filamento e você encontrar o totalGrams, pode assumir que o filamento 1 usou o totalGrams.${filamentsContext}
+1. Procure a seção "Filamentos do Projeto" para encontrar o NOME e a COR dos filamentos usados (1, 2, 3, etc).
+2. Procure a tabela de "Resultado do fatiamento" para encontrar a QUANTIDADE EM GRAMAS exata de cada filamento usado.
+MUITO IMPORTANTE: Se o projeto tiver múltiplas cores (ex: 4 filamentos na tabela), você DEVE retornar todos os 4 no array 'filaments' com suas respectivas gramas. Nunca agrupe tudo em um só se a tabela mostrar vários.${filamentsContext}
 Não inclua \`\`\`json na resposta, apenas o JSON puro.`;
 
     const response = await ai.models.generateContent({
