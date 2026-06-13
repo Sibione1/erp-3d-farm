@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Project, Filament, Order } from '../../types';
-import { getStorageData, addProject, deleteProject, updateProject } from '../../lib/storage';
+import { getStorageData, addProject, deleteProject, updateProject, updateFilament } from '../../lib/storage';
 import SlicerImageUpload, { SlicerData } from '../../components/SlicerImageUpload';
 
 export default function ProjetosPage() {
@@ -25,6 +25,8 @@ export default function ProjetosPage() {
     filamentsUsage: [] as { filamentId: string; grams: number }[]
   });
 
+  const [deductStock, setDeductStock] = useState(true);
+
   const loadData = () => {
     setProjects(getStorageData<Project>('projects'));
     setFilaments(getStorageData<Filament>('filaments'));
@@ -45,6 +47,15 @@ export default function ProjetosPage() {
       setEditingProjectId(null);
     } else {
       addProject(formData);
+      if (deductStock && formData.filamentsUsage.length > 0) {
+        formData.filamentsUsage.forEach(usage => {
+          const fil = filaments.find(f => f.id === usage.filamentId);
+          if (fil) {
+            const newWeight = Math.max(0, fil.currentWeightG - usage.grams);
+            updateFilament(fil.id, { currentWeightG: newWeight });
+          }
+        });
+      }
     }
     setIsAdding(false);
     setFormData({ name: '', imageUrls: [], estimatedPrintTimeMinutes: 0, estimatedConsumptionG: 0, successRate: 100, filamentsUsage: [] });
@@ -70,19 +81,27 @@ export default function ProjetosPage() {
     
     if (data.filaments && data.filaments.length > 0) {
       data.filaments.forEach(fAi => {
-         const lowerName = fAi.name.toLowerCase();
-         let match = filaments.find(f => {
-             const colorWords = f.colorName.toLowerCase().split(' ').filter(w => w.length > 2);
-             const hasColorMatch = colorWords.some(w => lowerName.includes(w)) || lowerName.includes(f.colorName.toLowerCase());
-             const hasMaterialMatch = lowerName.includes(f.material.toLowerCase());
-             return hasColorMatch && hasMaterialMatch;
-         });
-         if (!match) {
-             match = filaments.find(f => {
-                const colorWords = f.colorName.toLowerCase().split(' ').filter(w => w.length > 2);
-                return colorWords.some(w => lowerName.includes(w)) || lowerName.includes(f.colorName.toLowerCase());
-             });
+         let match;
+         if (fAi.id) {
+            match = filaments.find(f => f.id === fAi.id);
          }
+         
+         if (!match) {
+            const lowerName = fAi.name.toLowerCase();
+            match = filaments.find(f => {
+                const colorWords = f.colorName.toLowerCase().split(' ').filter(w => w.length > 2);
+                const hasColorMatch = colorWords.some(w => lowerName.includes(w)) || lowerName.includes(f.colorName.toLowerCase());
+                const hasMaterialMatch = lowerName.includes(f.material.toLowerCase());
+                return hasColorMatch && hasMaterialMatch;
+            });
+            if (!match) {
+                match = filaments.find(f => {
+                   const colorWords = f.colorName.toLowerCase().split(' ').filter(w => w.length > 2);
+                   return colorWords.some(w => lowerName.includes(w)) || lowerName.includes(f.colorName.toLowerCase());
+                });
+            }
+         }
+
          if (match) {
             extractedUsage.push({ filamentId: match.id, grams: fAi.grams });
          }
@@ -332,15 +351,30 @@ export default function ProjetosPage() {
               )}
             </div>
 
-            <div className="col-span-1 md:col-span-2 flex justify-end mt-4 gap-2">
-              {editingProjectId && (
-                <button type="button" onClick={() => { setIsAdding(false); setEditingProjectId(null); setFormData({ name: '', imageUrls: [], estimatedPrintTimeMinutes: 0, estimatedConsumptionG: 0, successRate: 100, filamentsUsage: [] }); }} className="bg-[var(--solar-base01)] text-[var(--solar-base03)] px-6 py-2 rounded font-bold hover:opacity-90">
-                  Cancelar
+            <div className="col-span-1 md:col-span-2 flex flex-col md:flex-row justify-between items-end mt-4 gap-4">
+              <div className="flex items-center gap-2">
+                <input 
+                  type="checkbox" 
+                  id="deductStock" 
+                  checked={deductStock} 
+                  onChange={e => setDeductStock(e.target.checked)}
+                  className="w-4 h-4 text-[var(--solar-magenta)] bg-[var(--solar-base03)] border-[var(--solar-base01)] rounded"
+                />
+                <label htmlFor="deductStock" className="text-sm font-bold text-[var(--solar-base0)]">
+                  Dar baixa automática no estoque de filamentos agora
+                </label>
+              </div>
+
+              <div className="flex gap-2">
+                {editingProjectId && (
+                  <button type="button" onClick={() => { setIsAdding(false); setEditingProjectId(null); setFormData({ name: '', imageUrls: [], estimatedPrintTimeMinutes: 0, estimatedConsumptionG: 0, successRate: 100, filamentsUsage: [] }); }} className="bg-[var(--solar-base01)] text-[var(--solar-base03)] px-6 py-2 rounded font-bold hover:opacity-90">
+                    Cancelar
+                  </button>
+                )}
+                <button type="submit" disabled={isAnalyzing} className="bg-[var(--solar-magenta)] text-[var(--solar-base2)] px-6 py-2 rounded font-bold hover:opacity-90 transition-opacity disabled:opacity-50">
+                  {editingProjectId ? 'Salvar Alterações' : 'Salvar Projeto'}
                 </button>
-              )}
-              <button type="submit" disabled={isAnalyzing} className="bg-[var(--solar-magenta)] text-[var(--solar-base2)] px-6 py-2 rounded font-bold hover:opacity-90 transition-opacity disabled:opacity-50">
-                {editingProjectId ? 'Salvar Alterações' : 'Salvar Projeto'}
-              </button>
+              </div>
             </div>
           </form>
         </div>

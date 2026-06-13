@@ -4,7 +4,7 @@ import { GoogleGenAI } from '@google/genai';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { image } = body; // Base64 string of the image
+    const { image, availableFilaments } = body; // Base64 string of the image
 
     if (!image) {
       return NextResponse.json({ error: 'Nenhuma imagem fornecida' }, { status: 400 });
@@ -24,6 +24,13 @@ export async function POST(req: NextRequest) {
 
     const mimeType = matches[1];
     const base64Data = matches[2];
+    
+    let filamentsContext = "";
+    if (availableFilaments && availableFilaments.length > 0) {
+      filamentsContext = `\nIMPORTANTE: Você deve mapear os filamentos encontrados EXATAMENTE para um destes IDs disponíveis no banco de dados do usuário:
+${availableFilaments.map((f: any) => `- ID: "${f.id}", Nome: "${f.name}"`).join('\n')}
+Sempre preencha o campo "id" no JSON com o ID do filamento correspondente. Não invente nomes ou cores que não estejam nesta lista. Se não achar uma correspondência óbvia, escolha a mais provável pelo nome/cor.`;
+    }
 
     const prompt = `Analise esta captura de tela do fatiador Bambu Studio e extraia os dados de impressão.
 Retorne estritamente um objeto JSON válido seguindo a estrutura abaixo:
@@ -33,13 +40,13 @@ Retorne estritamente um objeto JSON válido seguindo a estrutura abaixo:
   "minutes": <minutos do tempo total, ex: 27>,
   "totalGrams": <valor total em gramas de material, ex: 132.31>,
   "filaments": [
-    { "name": "Nome exato da cor e material (Ex: PLA Lite CIANO)", "grams": <gramas específicas deste filamento> }
+    { "id": "ID exato do filamento disponível", "name": "Nome exato", "grams": <gramas> }
   ]
 }
 Atenção na lista de 'filaments':
-1. Procure a seção "Filamentos do Projeto" (geralmente à esquerda) para encontrar o NOME e a COR do filamento (ex: "1 PLA Lite CIANO").
-2. Procure a seção "Esquema de cores" ou a tabela de Resultado do fatiamento para encontrar a QUANTIDADE EM GRAMAS exata de cada filamento usado (correspondendo ao número 1, 2, etc).
-Se houver apenas um filamento e você encontrar o totalGrams, pode assumir que o filamento 1 usou o totalGrams.
+1. Procure a seção "Filamentos do Projeto" (geralmente à esquerda) para encontrar o NOME e a COR do filamento.
+2. Procure a tabela de Resultado do fatiamento para encontrar a QUANTIDADE EM GRAMAS exata de cada filamento usado.
+Se houver apenas um filamento e você encontrar o totalGrams, pode assumir que o filamento 1 usou o totalGrams.${filamentsContext}
 Não inclua \`\`\`json na resposta, apenas o JSON puro.`;
 
     const response = await ai.models.generateContent({

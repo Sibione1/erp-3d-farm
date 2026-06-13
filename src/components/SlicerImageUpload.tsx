@@ -7,15 +7,16 @@ export interface SlicerData {
   hours: number;
   minutes: number;
   totalGrams: number;
-  filaments: { name: string; grams: number }[];
+  filaments: { id?: string; name: string; grams: number }[];
   rawText?: string;
 }
 
 interface SlicerImageUploadProps {
   onDataExtracted: (data: SlicerData, base64Image: string) => void;
+  availableFilaments?: { id: string; name: string }[];
 }
 
-export default function SlicerImageUpload({ onDataExtracted }: SlicerImageUploadProps) {
+export default function SlicerImageUpload({ onDataExtracted, availableFilaments = [] }: SlicerImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -70,7 +71,10 @@ export default function SlicerImageUpload({ onDataExtracted }: SlicerImageUpload
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ image: base64String })
+            body: JSON.stringify({ 
+              image: base64String,
+              availableFilaments
+            })
           });
 
           const data = await response.json();
