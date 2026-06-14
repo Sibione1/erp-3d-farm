@@ -32,8 +32,9 @@ export default function RootLayout({
         <SyncManager />
         <AuthProvider>
           <aside className="w-64 bg-[var(--solar-base02)] border-r border-[var(--solar-base01)] flex flex-col hidden md:flex no-print">
-            <div className="p-6">
-              <h1 className="text-2xl font-bold text-[var(--solar-yellow)]">ERP 3D</h1>
+            <div className="p-6 flex items-center gap-3">
+              <img src="/logo-modu.png" alt="MODU Logo" className="h-10 w-auto rounded object-contain" />
+              <h1 className="text-xl font-bold text-[var(--solar-yellow)]">ERP 3D</h1>
             </div>
             <nav className="flex-1 px-4 space-y-2">
               <a href="/" className="block py-2 px-4 rounded hover:bg-[var(--solar-base01)] text-[var(--solar-base1)] hover:text-[var(--solar-base3)] transition-colors">Dashboard</a>

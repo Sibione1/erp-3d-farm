@@ -55,19 +55,27 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, projectToEdit
     
     if (data.filaments && data.filaments.length > 0) {
       data.filaments.forEach(fAi => {
-         const lowerName = fAi.name.toLowerCase();
-         let match = filaments.find(f => {
-             const colorWords = f.colorName.toLowerCase().split(' ').filter(w => w.length > 2);
-             const hasColorMatch = colorWords.some(w => lowerName.includes(w)) || lowerName.includes(f.colorName.toLowerCase());
-             const hasMaterialMatch = lowerName.includes(f.material.toLowerCase());
-             return hasColorMatch && hasMaterialMatch;
-         });
-         if (!match) {
-             match = filaments.find(f => {
-                const colorWords = f.colorName.toLowerCase().split(' ').filter(w => w.length > 2);
-                return colorWords.some(w => lowerName.includes(w)) || lowerName.includes(f.colorName.toLowerCase());
-             });
+         let match;
+         if (fAi.id) {
+            match = filaments.find(f => f.id === fAi.id);
          }
+
+         if (!match) {
+            const lowerName = fAi.name.toLowerCase();
+            match = filaments.find(f => {
+                const colorWords = f.colorName.toLowerCase().split(' ').filter(w => w.length > 2);
+                const hasColorMatch = colorWords.some(w => lowerName.includes(w)) || lowerName.includes(f.colorName.toLowerCase());
+                const hasMaterialMatch = lowerName.includes(f.material.toLowerCase());
+                return hasColorMatch && hasMaterialMatch;
+            });
+            if (!match) {
+                match = filaments.find(f => {
+                   const colorWords = f.colorName.toLowerCase().split(' ').filter(w => w.length > 2);
+                   return colorWords.some(w => lowerName.includes(w)) || lowerName.includes(f.colorName.toLowerCase());
+                });
+            }
+         }
+
          if (match) {
             extractedUsage.push({ filamentId: match.id, grams: fAi.grams });
          }
@@ -141,7 +149,10 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, projectToEdit
           <div>
             <label className="block text-sm text-[var(--solar-base1)] mb-1">Print de Tela (Opcional)</label>
             {formData.imageUrls.length === 0 ? (
-              <SlicerImageUpload onDataExtracted={handleSlicerData} />
+              <SlicerImageUpload 
+                onDataExtracted={handleSlicerData} 
+                availableFilaments={filaments.map(f => ({ id: f.id, name: `${f.brand} ${f.material} ${f.colorName}` }))} 
+              />
             ) : (
               <div className="relative border-2 border-[var(--solar-blue)] rounded-xl p-4 text-center group">
                  <div className="flex gap-2 overflow-x-auto pb-2">
@@ -160,7 +171,10 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, projectToEdit
                  </div>
                 <p className="text-[var(--solar-green)] font-bold mt-2">✓ {formData.imageUrls.length} Imagem(ns) carregada(s)!</p>
                 <div className="mt-4">
-                  <SlicerImageUpload onDataExtracted={handleSlicerData} />
+                  <SlicerImageUpload 
+                    onDataExtracted={handleSlicerData} 
+                    availableFilaments={filaments.map(f => ({ id: f.id, name: `${f.brand} ${f.material} ${f.colorName}` }))} 
+                  />
                 </div>
               </div>
             )}
