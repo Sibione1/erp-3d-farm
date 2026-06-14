@@ -4,6 +4,11 @@ import { useState, useEffect } from 'react';
 import { getSystemSettings } from '../lib/storage';
 import { SystemSettings } from '../types';
 
+const USERS = [
+  { username: 'admin', password: '314334', role: 'admin', tenant: 'admin', companyName: 'Admin Farm' },
+  { username: 'bruna', password: 'macaroni', role: 'user', tenant: 'bruna', companyName: 'Bruna 3D' }
+];
+
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [settings, setSettings] = useState<SystemSettings | null>(null);
@@ -17,19 +22,14 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     setSettings(sysSettings);
 
     const sessionAuth = sessionStorage.getItem('is_authenticated') === 'true';
-
-    if (!sysSettings.securityEnabled) {
-      setIsAuthenticated(true);
-    } else {
-      setIsAuthenticated(sessionAuth);
-    }
+    setIsAuthenticated(sessionAuth);
     setLoading(false);
   };
 
   useEffect(() => {
     checkAuth();
 
-    // Listen to changes in settings (e.g. if the user turns on/off auth from config page)
+    // Listen to changes in settings
     const handleStorageUpdate = () => {
       checkAuth();
     };
@@ -40,15 +40,21 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!settings) return;
 
-    const expectedUser = settings.securityUsername || 'admin';
-    const expectedPass = settings.securityPassword || 'admin';
+    const user = USERS.find(
+      u => u.username.toLowerCase() === usernameInput.toLowerCase().trim() && u.password === passwordInput
+    );
 
-    if (usernameInput === expectedUser && passwordInput === expectedPass) {
+    if (user) {
       sessionStorage.setItem('is_authenticated', 'true');
+      sessionStorage.setItem('logged_in_user', user.username);
+      sessionStorage.setItem('user_role', user.role);
+      sessionStorage.setItem('active_tenant', user.tenant);
+      sessionStorage.setItem('company_name', user.companyName);
+      
       setIsAuthenticated(true);
       setError('');
+      window.dispatchEvent(new Event('storage-updated'));
     } else {
       setError('Usuário ou senha incorretos!');
     }

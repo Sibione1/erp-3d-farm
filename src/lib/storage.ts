@@ -7,13 +7,17 @@ const isBrowser = typeof window !== 'undefined';
 
 export const getStorageData = <T>(key: string): T[] => {
   if (!isBrowser) return [];
-  const data = localStorage.getItem(key);
+  const tenant = sessionStorage.getItem('active_tenant') || 'admin';
+  const tenantKey = `${tenant}_${key}`;
+  const data = localStorage.getItem(tenantKey);
   return data ? JSON.parse(data) : [];
 };
 
 export const setStorageData = (key: string, data: any[]) => {
   if (!isBrowser) return;
-  localStorage.setItem(key, JSON.stringify(data));
+  const tenant = sessionStorage.getItem('active_tenant') || 'admin';
+  const tenantKey = `${tenant}_${key}`;
+  localStorage.setItem(tenantKey, JSON.stringify(data));
   window.dispatchEvent(new Event('storage-updated'));
 };
 
@@ -159,6 +163,8 @@ const generateId = () => {
 // --- SYNC HELPERS (Type-safe and failsafe async calls) ---
 const syncInsert = async (table: string, record: any) => {
   try {
+    const tenant = sessionStorage.getItem('active_tenant') || 'admin';
+    if (tenant !== 'admin') return; // Only sync admin to Supabase for now
     const { error } = await supabase.from(table).insert([record]);
     if (error) console.error(`Erro ao inserir em ${table}:`, error.message);
   } catch (e) {
@@ -168,6 +174,8 @@ const syncInsert = async (table: string, record: any) => {
 
 const syncUpdate = async (table: string, id: string, record: any) => {
   try {
+    const tenant = sessionStorage.getItem('active_tenant') || 'admin';
+    if (tenant !== 'admin') return;
     const { error } = await supabase.from(table).update(record).eq('id', id);
     if (error) console.error(`Erro ao atualizar ${table}:`, error.message);
   } catch (e) {
@@ -177,6 +185,8 @@ const syncUpdate = async (table: string, id: string, record: any) => {
 
 const syncDelete = async (table: string, id: string) => {
   try {
+    const tenant = sessionStorage.getItem('active_tenant') || 'admin';
+    if (tenant !== 'admin') return;
     const { error } = await supabase.from(table).delete().eq('id', id);
     if (error) console.error(`Erro ao deletar de ${table}:`, error.message);
   } catch (e) {
@@ -187,6 +197,8 @@ const syncDelete = async (table: string, id: string) => {
 // --- SYNC ENGINE ---
 export const syncFromSupabase = async () => {
   if (!isBrowser) return;
+  const tenant = sessionStorage.getItem('active_tenant') || 'admin';
+  if (tenant !== 'admin') return; // Only sync admin to Supabase for now
   try {
     const { data: filaments } = await supabase.from('filaments').select('*');
     if (filaments && filaments.length > 0) {
@@ -400,7 +412,9 @@ export const deletePrinter = (id: string) => {
 
 export const getSystemSettings = (): SystemSettings => {
   if (!isBrowser) return {};
-  const data = localStorage.getItem('system_settings');
+  const tenant = sessionStorage.getItem('active_tenant') || 'admin';
+  const tenantKey = `${tenant}_system_settings`;
+  const data = localStorage.getItem(tenantKey);
   if (!data) {
     return {
       quoteHourBasePrice: 18.0,
@@ -418,6 +432,8 @@ export const getSystemSettings = (): SystemSettings => {
 export const updateSystemSettings = (data: Partial<SystemSettings>) => {
   const current = getSystemSettings();
   const updated = { ...current, ...data };
-  localStorage.setItem('system_settings', JSON.stringify(updated));
+  const tenant = sessionStorage.getItem('active_tenant') || 'admin';
+  const tenantKey = `${tenant}_system_settings`;
+  localStorage.setItem(tenantKey, JSON.stringify(updated));
   window.dispatchEvent(new Event('storage-updated'));
 };

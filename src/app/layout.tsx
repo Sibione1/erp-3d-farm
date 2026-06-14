@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import SyncManager from "../components/SyncManager";
 import AuthProvider from "../components/AuthProvider";
+import TenantSwitcher from "../components/TenantSwitcher";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,6 +37,9 @@ export default function RootLayout({
               <img src="/logo-modu.png" alt="MODU Logo" className="h-10 w-auto rounded object-contain" />
               <h1 className="text-xl font-bold text-[var(--solar-yellow)]">ERP 3D</h1>
             </div>
+            
+            <TenantSwitcher />
+            
             <nav className="flex-1 px-4 space-y-2">
               <a href="/" className="block py-2 px-4 rounded hover:bg-[var(--solar-base01)] text-[var(--solar-base1)] hover:text-[var(--solar-base3)] transition-colors">Dashboard</a>
               <a href="/filamentos" className="block py-2 px-4 rounded hover:bg-[var(--solar-base01)] text-[var(--solar-base1)] hover:text-[var(--solar-base3)] transition-colors">Filamentos</a>
