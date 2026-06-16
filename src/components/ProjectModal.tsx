@@ -124,14 +124,23 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, projectToEdit
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (projectToEdit) {
-      updateProject(projectToEdit.id, formData);
-      onSuccess(projectToEdit.id);
-    } else {
-      const newProject = addProject({
-        ...formData
-      });
-      onSuccess(newProject.id);
+    try {
+      if (!formData.name || formData.name.trim() === '') {
+        alert('Por favor, preencha o Nome do Projeto antes de salvar.');
+        return;
+      }
+      if (projectToEdit) {
+        updateProject(projectToEdit.id, formData);
+        onSuccess(projectToEdit.id);
+      } else {
+        const newProject = addProject({
+          ...formData
+        });
+        onSuccess(newProject.id);
+      }
+    } catch (err: any) {
+      alert('Erro ao salvar projeto: ' + (err.message || err.toString()));
+      console.error(err);
     }
   };
 
@@ -143,7 +152,7 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, projectToEdit
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm text-[var(--solar-base1)] mb-1">Nome do Projeto *</label>
-            <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Ex: Vaso Geométrico" className="w-full bg-[var(--solar-base03)] border border-[var(--solar-base01)] rounded p-2 text-[var(--solar-base0)]" />
+            <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Ex: Vaso Geométrico" className="w-full bg-[var(--solar-base03)] border border-[var(--solar-base01)] rounded p-2 text-[var(--solar-base0)]" />
           </div>
 
           <div>
@@ -186,7 +195,7 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, projectToEdit
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs text-[var(--solar-base1)] mb-1">Horas</label>
-                  <input required type="number" min="0" value={Math.floor(formData.estimatedPrintTimeMinutes / 60)} onChange={e => {
+                  <input type="number" min="0" value={Math.floor(formData.estimatedPrintTimeMinutes / 60)} onChange={e => {
                     const h = Number(e.target.value);
                     const m = formData.estimatedPrintTimeMinutes % 60;
                     setFormData({...formData, estimatedPrintTimeMinutes: (h * 60) + m});
@@ -194,7 +203,7 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, projectToEdit
                 </div>
                 <div>
                   <label className="block text-xs text-[var(--solar-base1)] mb-1">Minutos</label>
-                  <input required type="number" min="0" max="59" value={formData.estimatedPrintTimeMinutes % 60} onChange={e => {
+                  <input type="number" min="0" max="59" value={formData.estimatedPrintTimeMinutes % 60} onChange={e => {
                     const h = Math.floor(formData.estimatedPrintTimeMinutes / 60);
                     const m = Number(e.target.value);
                     setFormData({...formData, estimatedPrintTimeMinutes: (h * 60) + m});
@@ -206,11 +215,11 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, projectToEdit
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-[var(--solar-base1)] mb-1">Consumo Estimado (g) *</label>
-              <input required type="number" step="0.1" value={formData.estimatedConsumptionG} onChange={e => setFormData({...formData, estimatedConsumptionG: Number(e.target.value)})} className="w-full bg-[var(--solar-base03)] border border-[var(--solar-base01)] rounded p-2 text-[var(--solar-base0)]" />
+              <input type="number" step="0.1" value={formData.estimatedConsumptionG} onChange={e => setFormData({...formData, estimatedConsumptionG: Number(e.target.value)})} className="w-full bg-[var(--solar-base03)] border border-[var(--solar-base01)] rounded p-2 text-[var(--solar-base0)]" />
             </div>
             <div>
               <label className="block text-sm text-[var(--solar-base1)] mb-1">Taxa de Sucesso (%) *</label>
-              <input required type="number" min="0" max="100" value={formData.successRate} onChange={e => setFormData({...formData, successRate: Number(e.target.value)})} className="w-full bg-[var(--solar-base03)] border border-[var(--solar-base01)] rounded p-2 text-[var(--solar-base0)]" />
+              <input type="number" min="0" max="100" value={formData.successRate} onChange={e => setFormData({...formData, successRate: Number(e.target.value)})} className="w-full bg-[var(--solar-base03)] border border-[var(--solar-base01)] rounded p-2 text-[var(--solar-base0)]" />
             </div>
           </div>
 

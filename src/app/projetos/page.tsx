@@ -42,24 +42,34 @@ export default function ProjetosPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingProjectId) {
-      updateProject(editingProjectId, formData);
-      setEditingProjectId(null);
-    } else {
-      addProject(formData);
-      if (deductStock && formData.filamentsUsage.length > 0) {
-        formData.filamentsUsage.forEach(usage => {
-          const fil = filaments.find(f => f.id === usage.filamentId);
-          if (fil) {
-            const newWeight = Math.max(0, fil.currentWeightG - usage.grams);
-            updateFilament(fil.id, { currentWeightG: newWeight });
-          }
-        });
+    try {
+      if (!formData.name || formData.name.trim() === '') {
+        alert('Por favor, preencha o Nome do Projeto antes de salvar.');
+        return;
       }
+      
+      if (editingProjectId) {
+        updateProject(editingProjectId, formData);
+        setEditingProjectId(null);
+      } else {
+        addProject(formData);
+        if (deductStock && formData.filamentsUsage.length > 0) {
+          formData.filamentsUsage.forEach(usage => {
+            const fil = filaments.find(f => f.id === usage.filamentId);
+            if (fil) {
+              const newWeight = Math.max(0, fil.currentWeightG - usage.grams);
+              updateFilament(fil.id, { currentWeightG: newWeight });
+            }
+          });
+        }
+      }
+      setIsAdding(false);
+      setFormData({ name: '', imageUrls: [], estimatedPrintTimeMinutes: 0, estimatedConsumptionG: 0, successRate: 100, filamentsUsage: [] });
+      loadData();
+    } catch (err: any) {
+      alert('Erro inesperado ao salvar: ' + (err.message || err.toString()));
+      console.error('Erro no handleSubmit:', err);
     }
-    setIsAdding(false);
-    setFormData({ name: '', imageUrls: [], estimatedPrintTimeMinutes: 0, estimatedConsumptionG: 0, successRate: 100, filamentsUsage: [] });
-    loadData();
   };
 
   const handleEdit = (project: Project) => {
@@ -265,12 +275,12 @@ export default function ProjetosPage() {
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <label className="block text-sm text-[var(--solar-base1)] mb-1">Nome do Projeto</label>
-              <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-[var(--solar-base03)] border border-[var(--solar-base01)] rounded p-2 text-[var(--solar-base0)]" />
+              <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-[var(--solar-base03)] border border-[var(--solar-base01)] rounded p-2 text-[var(--solar-base0)]" />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="block text-sm text-[var(--solar-base1)] mb-1">Horas</label>
-                <input required type="number" min="0" value={Math.floor(formData.estimatedPrintTimeMinutes / 60)} onChange={e => {
+                <input type="number" min="0" value={Math.floor(formData.estimatedPrintTimeMinutes / 60)} onChange={e => {
                   const h = Number(e.target.value);
                   const m = formData.estimatedPrintTimeMinutes % 60;
                   setFormData({...formData, estimatedPrintTimeMinutes: (h * 60) + m});
@@ -278,7 +288,7 @@ export default function ProjetosPage() {
               </div>
               <div>
                 <label className="block text-sm text-[var(--solar-base1)] mb-1">Minutos</label>
-                <input required type="number" min="0" max="59" value={formData.estimatedPrintTimeMinutes % 60} onChange={e => {
+                <input type="number" min="0" max="59" value={formData.estimatedPrintTimeMinutes % 60} onChange={e => {
                   const h = Math.floor(formData.estimatedPrintTimeMinutes / 60);
                   const m = Number(e.target.value);
                   setFormData({...formData, estimatedPrintTimeMinutes: (h * 60) + m});
@@ -287,11 +297,11 @@ export default function ProjetosPage() {
             </div>
             <div>
               <label className="block text-sm text-[var(--solar-base1)] mb-1">Consumo Total Estimado (Gramas)</label>
-              <input required type="number" step="0.1" value={formData.estimatedConsumptionG} onChange={e => setFormData({...formData, estimatedConsumptionG: Number(e.target.value)})} className="w-full bg-[var(--solar-base03)] border border-[var(--solar-base01)] rounded p-2 text-[var(--solar-base0)]" />
+              <input type="number" step="0.1" value={formData.estimatedConsumptionG} onChange={e => setFormData({...formData, estimatedConsumptionG: Number(e.target.value)})} className="w-full bg-[var(--solar-base03)] border border-[var(--solar-base01)] rounded p-2 text-[var(--solar-base0)]" />
             </div>
             <div>
               <label className="block text-sm text-[var(--solar-base1)] mb-1">Taxa de Sucesso (%)</label>
-              <input required type="number" min="0" max="100" value={formData.successRate} onChange={e => setFormData({...formData, successRate: Number(e.target.value)})} className="w-full bg-[var(--solar-base03)] border border-[var(--solar-base01)] rounded p-2 text-[var(--solar-base0)]" />
+              <input type="number" min="0" max="100" value={formData.successRate} onChange={e => setFormData({...formData, successRate: Number(e.target.value)})} className="w-full bg-[var(--solar-base03)] border border-[var(--solar-base01)] rounded p-2 text-[var(--solar-base0)]" />
             </div>
             <div className="md:col-span-2">
               {formData.imageUrls.length > 0 && (
