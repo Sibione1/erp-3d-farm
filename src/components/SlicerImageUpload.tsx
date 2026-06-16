@@ -65,7 +65,7 @@ export default function SlicerImageUpload({ onDataExtracted, availableFilaments 
         // High quality for Gemini OCR (to read small tables)
         const base64ForAPI = await compressImage(originalBase64, 2500, 0.9);
         // Low quality for LocalStorage (to prevent QuotaExceededError)
-        const base64ForStorage = await compressImage(originalBase64, 800, 0.5);
+        const base64ForStorage = await compressImage(originalBase64, 400, 0.3);
 
         try {
           const response = await fetch('/api/analyze-slicer', {

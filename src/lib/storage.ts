@@ -17,8 +17,31 @@ export const setStorageData = (key: string, data: any[]) => {
   if (!isBrowser) return;
   const tenant = sessionStorage.getItem('active_tenant') || 'admin';
   const tenantKey = `${tenant}_${key}`;
-  localStorage.setItem(tenantKey, JSON.stringify(data));
-  window.dispatchEvent(new Event('storage-updated'));
+  
+  try {
+    localStorage.setItem(tenantKey, JSON.stringify(data));
+    window.dispatchEvent(new Event('storage-updated'));
+  } catch (e: any) {
+    if (e.name === 'QuotaExceededError' || e.message?.toLowerCase().includes('quota')) {
+      console.warn('LocalStorage quota exceeded. Stripping imageUrls...');
+      if (key === 'projects') {
+        const lightData = data.map(item => ({ ...item, imageUrls: [] }));
+        try {
+          localStorage.setItem(tenantKey, JSON.stringify(lightData));
+          window.dispatchEvent(new Event('storage-updated'));
+          alert("Aviso: Limite de armazenamento do navegador atingido. As imagens deste projeto não puderam ser salvas localmente, mas os dados do projeto foram salvos com sucesso.");
+        } catch (err) {
+          console.error("Storage still full after stripping images", err);
+          alert("Erro crítico: O armazenamento do seu navegador está completamente cheio. Limpe os dados do site para continuar.");
+        }
+      } else {
+        alert("Erro: O armazenamento do navegador está cheio. Não foi possível salvar.");
+      }
+    } else {
+      console.error('Error saving to storage:', e);
+      throw e;
+    }
+  }
 };
 
 // Helper para converter snake_case do DB para camelCase do App
