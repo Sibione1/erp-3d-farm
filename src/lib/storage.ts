@@ -53,19 +53,10 @@ const mapFromDb = (obj: any) => {
     newObj[camelKey] = obj[key];
   }
 
-  // Restore the imageUrls array expected by the UI for projects
+  // Nunca carregar as imagens gigantes do BD para o LocalStorage
+  newObj.imageUrls = [];
   if (newObj.imageUrl) {
-    try {
-      newObj.imageUrls = JSON.parse(newObj.imageUrl);
-      if (!Array.isArray(newObj.imageUrls)) {
-        newObj.imageUrls = [newObj.imageUrl];
-      }
-    } catch {
-      newObj.imageUrls = [newObj.imageUrl];
-    }
     delete newObj.imageUrl;
-  } else if (!newObj.imageUrls) {
-    newObj.imageUrls = [];
   }
 
   return newObj;
@@ -328,7 +319,8 @@ export const addProject = (project: Omit<Project, 'id' | 'createdAt'>) => {
     id: generateId(),
     createdAt: new Date().toISOString(),
   };
-  setStorageData('projects', [...projects, newProject]);
+  const localProject = { ...newProject, imageUrls: [] };
+  setStorageData('projects', [...projects, localProject]);
   syncInsert('projects', mapToDb('projects', newProject));
   return newProject;
 };
@@ -337,9 +329,11 @@ export const updateProject = (id: string, data: Partial<Project>) => {
   const projects = getStorageData<Project>('projects');
   const index = projects.findIndex(p => p.id === id);
   if (index !== -1) {
-    projects[index] = { ...projects[index], ...data };
+    const updated = { ...projects[index], ...data };
+    const localUpdated = { ...updated, imageUrls: [] };
+    projects[index] = localUpdated;
     setStorageData('projects', projects);
-    syncUpdate('projects', id, mapToDb('projects', data));
+    syncUpdate('projects', id, mapToDb('projects', updated));
   }
 };
 
