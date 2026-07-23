@@ -17,7 +17,7 @@ export default function LoginPage() {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        router.push('/dashboard');
+        router.push('/');
       }
     };
     
@@ -28,7 +28,7 @@ export default function LoginPage() {
       if (event === 'SIGNED_IN' && session) {
         // Remove a necessidade de tenants falsos ("admin", etc)
         sessionStorage.removeItem('active_tenant');
-        router.push('/dashboard');
+        router.push('/');
       }
     });
 

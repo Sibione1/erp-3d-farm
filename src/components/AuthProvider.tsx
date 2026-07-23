@@ -43,12 +43,10 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   }
 
   // Se não estiver logado e a rota não for /login, redireciona. 
-  // Caso a rota SEJA /login, quem renderiza é o próprio arquivo de rota.
   if (!isAuthenticated && pathname !== '/login' && pathname !== '/cadastro') {
     router.push('/login');
     return null;
   }
 
-  // Se estiver logado ou na página pública de login, renderiza a tela normalmente
   return <>{children}</>;
 }
