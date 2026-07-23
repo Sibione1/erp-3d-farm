@@ -3,24 +3,37 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '../lib/supabase';
+import { syncFromSupabase } from '../lib/storage';
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const router = useRouter();
   const pathname = usePathname();
 
+  const isAuthRoute = pathname === '/login' || pathname === '/cadastro';
+
   useEffect(() => {
     // Verifica a sessão atual no Supabase
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setIsAuthenticated(!!session);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setIsAuthenticated(!!session);
+        if (session) {
+          syncFromSupabase();
+        }
+      } catch (e) {
+        console.error("Erro ao verificar sessão:", e);
+        setIsAuthenticated(false);
+      }
     };
     checkSession();
 
     // Escuta mudanças de autenticação (login, logout, etc)
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       setIsAuthenticated(!!session);
-      if (!session && pathname !== '/login' && pathname !== '/cadastro') {
+      if (session) {
+        syncFromSupabase();
+      } else if (!isAuthRoute) {
         router.push('/login');
       }
     });
@@ -28,7 +41,12 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [pathname, router]);
+  }, [pathname, router, isAuthRoute]);
+
+  // Se estiver na rota de login/cadastro, renderiza imediatamente sem mostrar o loader
+  if (isAuthRoute) {
+    return <>{children}</>;
+  }
 
   // Enquanto verifica o status de auth (inicialmente null), exibe o loader
   if (isAuthenticated === null) {
@@ -42,8 +60,8 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     );
   }
 
-  // Se não estiver logado e a rota não for /login, redireciona. 
-  if (!isAuthenticated && pathname !== '/login' && pathname !== '/cadastro') {
+  // Se não estiver logado e tentar acessar área restrita, redireciona
+  if (!isAuthenticated) {
     router.push('/login');
     return null;
   }

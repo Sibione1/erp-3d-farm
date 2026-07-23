@@ -26,9 +26,8 @@ export default function LoginPage() {
     // Escuta mudanças de auth (quando logar com sucesso, redireciona)
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        // Remove a necessidade de tenants falsos ("admin", etc)
         sessionStorage.removeItem('active_tenant');
-        router.push('/');
+        window.location.href = '/';
       }
     });
 

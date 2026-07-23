@@ -177,9 +177,10 @@ const generateId = () => {
 // --- SYNC HELPERS (Type-safe and failsafe async calls) ---
 const syncInsert = async (table: string, record: any) => {
   try {
-    const tenant = sessionStorage.getItem('active_tenant') || 'admin';
-    if (tenant !== 'admin') return; // Only sync admin to Supabase for now
-    const { error } = await supabase.from(table).insert([record]);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const dbRecord = { ...mapToDb(table, record), user_id: user.id };
+    const { error } = await supabase.from(table).insert([dbRecord]);
     if (error) console.error(`Erro ao inserir em ${table}:`, error.message);
   } catch (e) {
     console.error(`Erro ao inserir em ${table}:`, e);
@@ -188,9 +189,10 @@ const syncInsert = async (table: string, record: any) => {
 
 const syncUpdate = async (table: string, id: string, record: any) => {
   try {
-    const tenant = sessionStorage.getItem('active_tenant') || 'admin';
-    if (tenant !== 'admin') return;
-    const { error } = await supabase.from(table).update(record).eq('id', id);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const dbRecord = mapToDb(table, record);
+    const { error } = await supabase.from(table).update(dbRecord).eq('id', id);
     if (error) console.error(`Erro ao atualizar ${table}:`, error.message);
   } catch (e) {
     console.error(`Erro ao atualizar ${table}:`, e);
@@ -199,8 +201,8 @@ const syncUpdate = async (table: string, id: string, record: any) => {
 
 const syncDelete = async (table: string, id: string) => {
   try {
-    const tenant = sessionStorage.getItem('active_tenant') || 'admin';
-    if (tenant !== 'admin') return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
     const { error } = await supabase.from(table).delete().eq('id', id);
     if (error) console.error(`Erro ao deletar de ${table}:`, error.message);
   } catch (e) {
@@ -211,31 +213,32 @@ const syncDelete = async (table: string, id: string) => {
 // --- SYNC ENGINE ---
 export const syncFromSupabase = async () => {
   if (!isBrowser) return;
-  const tenant = sessionStorage.getItem('active_tenant') || 'admin';
-  if (tenant !== 'admin') return; // Only sync admin to Supabase for now
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
     const { data: filaments } = await supabase.from('filaments').select('*');
-    if (filaments && filaments.length > 0) {
+    if (filaments) {
       setStorageData('filaments', filaments.map(mapFromDb));
     }
 
     const { data: clients } = await supabase.from('clients').select('*');
-    if (clients && clients.length > 0) {
+    if (clients) {
       setStorageData('clients', clients.map(mapFromDb));
     }
 
     const { data: projects } = await supabase.from('projects').select('*');
-    if (projects && projects.length > 0) {
+    if (projects) {
       setStorageData('projects', projects.map(mapFromDb));
     }
 
     const { data: printers } = await supabase.from('printers').select('*');
-    if (printers && printers.length > 0) {
+    if (printers) {
       setStorageData('printers', printers.map(mapFromDb));
     }
 
     const { data: orders } = await supabase.from('orders').select('*');
-    if (orders && orders.length > 0) {
+    if (orders) {
       const mappedOrders = orders.map(mapFromDb).map((o: any) => {
         if (typeof o.items === 'string') {
           try { o.items = JSON.parse(o.items); } catch(e) {}
@@ -244,11 +247,8 @@ export const syncFromSupabase = async () => {
       });
       setStorageData('orders', mappedOrders);
     }
-    
-    const { data: transactions } = await supabase.from('transactions').select('*');
-    if (transactions && transactions.length > 0) {
-      setStorageData('transactions', transactions.map(mapFromDb));
-    }
+
+    window.dispatchEvent(new Event('storage-updated'));
   } catch (e) {
     console.error('Erro de sincronização com Supabase:', e);
   }
